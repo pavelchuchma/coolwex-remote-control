@@ -30,16 +30,10 @@ void startHoldKey(KEYS key, uint16_t durationMs) {
     keyStatus.holdKeyStart(stateData.getNow(), durationMs);
 }
 
-inline void cancelCurrentSequence() {
-    keyStatus.currentSequence = KEY_SEQUENCE::none;
-    keyStatus.currentSequenceStep = 0;
-}
-
 bool checkDisplayMode(MODE expMode) {
     MODE currentMode = stateData.getDisplayMode();
     if (currentMode != expMode) {
         Serial.printf("ERR: %s expected, but it is: %s\n", enumToString(expMode), enumToString(currentMode));
-        cancelCurrentSequence();
         return false;
     }
     return true;
@@ -54,8 +48,7 @@ bool checkDisplayModeAndDoNextStep(MODE expMode, KEYS key, uint16_t durationMs) 
     return true;
 }
 
-bool keySequenceRefreshStatus() {
-    Serial.printf("keySequenceRefreshStatus(%d)\n", keyStatus.currentSequenceStep);
+bool commonGetStateSteps0to3() {
     bool isVacation;
     switch (keyStatus.currentSequenceStep) {
     case 0:
@@ -84,8 +77,70 @@ bool keySequenceRefreshStatus() {
             return true;
         }
         if (!checkDisplayMode(MODE::unlocked)) {
+            // unexpected state
             return false;
         }
+        return true;
+    default:
+        Serial.println("ERR: unexpected commonGetStateSteps position");
+        return false;
+    }
+}
+
+
+bool keySequencePowerOn() {
+    Serial.printf("keySequencePowerOn(%d)\n", keyStatus.currentSequenceStep);
+    bool isVacation;
+    switch (keyStatus.currentSequenceStep) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        return commonGetStateSteps0to3();
+    case 4:
+        if (!checkDisplayMode(MODE::unlocked)) {
+            return false;
+        }
+        if (keyStatus.currentSequenceTargetValue == stateData.isPowerOn()) {
+            Serial.printf("No change, power is already: %d\n", stateData.isPowerOn());
+            return false;
+        }
+
+        keyStatus.currentSequenceStep++;
+        startHoldKey(KEYS::keyOnOff, 200);
+        return true;
+    case 5:
+        return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyVacation, 100);
+    case 6:
+        keyStatus.currentSequenceStep++;
+        // vacation mode is available only if power is on
+        isVacation = stateData.getDisplayMode() == MODE::setVacation;
+
+        if (isVacation == (bool)keyStatus.currentSequenceTargetValue) {
+            Serial.printf("INFO: power set %s\n", (isVacation) ? "ON" : "OFF");
+        } else {
+            Serial.printf("ERR: failed to set power %s\n", (keyStatus.currentSequenceTargetValue) ? "ON" : "OFF");
+        }
+        if (isVacation) {
+            startHoldKey(KEYS::keyCancel, 100);
+            return true;
+        }
+    case 7:
+        return false;
+    default:
+        Serial.println("ERR: unexpected status sequence step");
+        return false;
+    }
+}
+
+bool keySequenceRefreshStatus() {
+    Serial.printf("keySequenceRefreshStatus(%d)\n", keyStatus.currentSequenceStep);
+    switch (keyStatus.currentSequenceStep) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        return commonGetStateSteps0to3();
     case 4:
         return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyUpArrow, 100);
     case 5:
@@ -105,10 +160,9 @@ bool keySequenceRefreshStatus() {
     case 12:
         return checkDisplayModeAndDoNextStep(MODE::infoTh, KEYS::keyEHeaterPlusDisinfect, 1100);
     case 13:
-        cancelCurrentSequence();
         Serial.println("INFO: status read completed");
         stateData.onStatusUpdated();
-        return true;
+        return false;
     default:
         Serial.println("ERR: unexpected status sequence step");
         return false;
@@ -141,21 +195,32 @@ bool processKeySequence() {
         return false;
     }
 
+    bool callResult = false;
     switch (keyStatus.currentSequence) {
-    case KEY_SEQUENCE::none:
+    case KEY_SEQUENCE::ksNone:
         return false;
-    case KEY_SEQUENCE::refreshStatus:
-        return keySequenceRefreshStatus();
+    case KEY_SEQUENCE::ksRefreshStatus:
+        callResult = keySequenceRefreshStatus();
+        break;
+    case KEY_SEQUENCE::ksPowerOn:
+        callResult = keySequencePowerOn();
+        break;
     default:
         Serial.printf("ERR: Unexpected key sequence\n");
-        cancelCurrentSequence();
-        return false;
     }
-}
-
-void startKeySequence(KEY_SEQUENCE sequence) {
-    if (keyStatus.currentSequence == KEY_SEQUENCE::none) {
-        keyStatus.currentSequence = sequence;
+    if (!callResult) {
+        // cancel current key sequence
+        keyStatus.currentSequence = KEY_SEQUENCE::ksNone;
         keyStatus.currentSequenceStep = 0;
     }
+    return callResult;
+}
+
+void startKeySequence(KEY_SEQUENCE sequence, uint16_t currentSequenceTargetValue) {
+    if (keyStatus.currentSequence != KEY_SEQUENCE::ksNone) {
+        Serial.printf("ERR: Another key sequence in progress\n");
+    }
+    keyStatus.currentSequence = sequence;
+    keyStatus.currentSequenceTargetValue = currentSequenceTargetValue;
+    keyStatus.currentSequenceStep = 0;
 }

@@ -160,6 +160,10 @@ public:
         }
         modbus.Ireg(iregStatusFlags, statusFlags);
     }
+    
+    bool isPowerOn() {
+        return getStatusFlags() & STATUS_FLAG_ON;
+    }
 
     TEMP_ACCESSORS_IREG(TempCurrent);
     TEMP_ACCESSORS_HREG(TempTarget);
@@ -191,8 +195,12 @@ public:
     }
 
     uint16_t getStatusAgeSeconds() {
+        if (lastRefreshTime == 0) {
+            // not refresh yet
+            return UINT16_MAX;
+        }
         uint32_t diffSecs = millisSince(lastRefreshTime) / 1000;
-        return (diffSecs >= UINT16_MAX) ? INT16_MAX : diffSecs;
+        return (diffSecs >= UINT16_MAX) ? UINT16_MAX : diffSecs;
     }
 };
 

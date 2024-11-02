@@ -3,8 +3,10 @@
 #define D9F5614E_AB7E_4715_9792_44B8B371911D
 
 enum KEY_SEQUENCE {
-    none = 0,
-    refreshStatus
+    ksNone = 0,
+    ksRefreshStatus,
+    ksPowerOn,
+    ksSetTargetTemp
 };
 
 struct KeyStatus {
@@ -15,7 +17,8 @@ struct KeyStatus {
     uint8_t inRow = 0;
     unsigned long displayReadsAfterKeyUp = 0;
 
-    KEY_SEQUENCE currentSequence = KEY_SEQUENCE::none;
+    KEY_SEQUENCE currentSequence = KEY_SEQUENCE::ksNone;
+    uint16_t currentSequenceTargetValue;
     uint8_t currentSequenceStep = 0;
 
     void holdKeyStart(uint32_t now, uint32_t durationMs) {
@@ -39,6 +42,6 @@ bool handleHoldKey();
 void setKeyboardOutPinsAsInputs();
 bool processKeySequence();
 
-void startKeySequence(KEY_SEQUENCE sequence);
+void startKeySequence(KEY_SEQUENCE, uint16_t currentSequenceTargetValue);
 
 #endif /* D9F5614E_AB7E_4715_9792_44B8B371911D */

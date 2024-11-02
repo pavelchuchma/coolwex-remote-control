@@ -89,13 +89,13 @@ void initializeWiFi() {
 
 uint16_t onSetRefreshStatusCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetRefreshStatusCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
-    startKeySequence(KEY_SEQUENCE::refreshStatus);
+    startKeySequence(KEY_SEQUENCE::ksRefreshStatus, 0);
     return value;
 }
 
 uint16_t onSetPowerOnCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetPowerOnCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
-    // startKeySequence(KEY_SEQUENCE::refreshStatus);
+    startKeySequence(KEY_SEQUENCE::ksPowerOn, value);
     return value;
 }
 
