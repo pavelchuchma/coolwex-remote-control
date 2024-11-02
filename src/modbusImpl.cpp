@@ -14,12 +14,27 @@ uint16_t onSetPowerOnCallback(TRegister* reg, uint16_t value) {
     return value;
 }
 
-uint16_t onSetHregCallback(TRegister* reg, uint16_t value) {
-    Serial.printf("onSetHregCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
+uint16_t onSetPressKeyCallback(TRegister* reg, uint16_t value) {
+    Serial.printf("onSetPressKeyCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
     KEYS key = (KEYS)(value >> 8);
     uint16_t duration = (value & 0xFF) * 100;
     startHoldKey(key, duration);
     return value;
+}
+
+uint16_t onSetTempTargetCallback(TRegister* reg, uint16_t value) {
+    uint8_t targetTemp = value - 128;
+    Serial.printf("onSetTempTargetCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)targetTemp);
+    if (targetTemp >= 38 && targetTemp <= 60) {
+        startKeySequence(KEY_SEQUENCE::ksSetTargetTemp, targetTemp);        
+    } else {
+        Serial.printf("ERR: target temp %d is our of range <38;60>\n", (int)targetTemp);
+    }
+    return value;
+}
+
+uint16_t onGetTempTargetCallback(TRegister* reg, uint16_t value) {
+    return stateData.getTempTarget() + 128;
 }
 
 uint16_t onGetStatusAgeCallback(TRegister* reg, uint16_t value) {
@@ -45,7 +60,9 @@ void initializeModbus() {
     modbus.addHreg(MODBUS_REGISTERS::hregPressKey, 0, 1);
     modbus.addCoil(MODBUS_REGISTERS::cregRefreshStatus, false, 1);
     modbus.addCoil(MODBUS_REGISTERS::cregPowerOn, false, 1);
-    modbus.onSetHreg(MODBUS_REGISTERS::hregPressKey, onSetHregCallback, 1);
+    modbus.onSetHreg(MODBUS_REGISTERS::hregPressKey, onSetPressKeyCallback, 1);
+    modbus.onSetHreg(MODBUS_REGISTERS::hregTempTarget, onSetTempTargetCallback, 1);
+    modbus.onGetHreg(MODBUS_REGISTERS::hregTempTarget, onGetTempTargetCallback, 1);
     modbus.onGetIreg(MODBUS_REGISTERS::iregStatusAge, onGetStatusAgeCallback, 1);
     modbus.onGetIreg(MODBUS_REGISTERS::iregStatusFlags, onGetStatusFlagsCallback, 1);
     modbus.onSetCoil(MODBUS_REGISTERS::cregRefreshStatus, onSetRefreshStatusCallback, 1);

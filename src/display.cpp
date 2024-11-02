@@ -134,7 +134,7 @@ void decodeDisplayData() {
         stateData.setTempCurrent(decodeTemp());
         break;
     case MODE::setTemp:
-        stateData.setTempTarget(decodeTemp());
+        stateData.setCurrentSetTempValue(decodeTemp());
         break;
     case MODE::infoSU:
         stateData.setTempSU(decodeTemp());

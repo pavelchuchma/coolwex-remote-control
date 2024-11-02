@@ -128,7 +128,8 @@ const char* enumToString(KEYS value);
         }\
         flag##name = value;\
     }\
-    bool is##name() { return flag##name; }
+    bool is##name() { return flag##name; } \
+    bool flag##name
 
 
 class StateData {
@@ -137,11 +138,8 @@ class StateData {
     ModbusIP& modbus;
     uint32_t currentLoopMillis;
     uint32_t lastRefreshTime = 0;
-    bool flagPowerOn;
-    bool flagHot;
-    bool flagEHeat;
-    bool flagPump;
-    bool flagVacation;
+    int8_t currentSetTempValue;
+    int8_t tempTarget = INT8_MIN;
 
 public:
     StateData(ModbusIP& modbus) : modbus(modbus) {
@@ -158,6 +156,25 @@ public:
         modbus.Ireg(iregDisplayMode, mode);
     }
 
+    void setCurrentSetTempValue(int8_t value) {
+        currentSetTempValue = value;
+    }
+
+    int8_t getCurrentSetTempValue() {
+        return currentSetTempValue;
+    }
+
+    void setTempTarget(int8_t value) {
+        if (value != tempTarget) {
+            Serial.printf("setTempTarget: %d\n", value);
+        }
+        tempTarget = value;
+    }
+
+    int8_t getTempTarget() {
+        return tempTarget;
+    }
+
     FLAG_ACCESSORS(PowerOn);
     FLAG_ACCESSORS(Hot);
     FLAG_ACCESSORS(EHeat);
@@ -165,7 +182,6 @@ public:
     FLAG_ACCESSORS(Vacation);
 
     TEMP_ACCESSORS_IREG(TempCurrent);
-    TEMP_ACCESSORS_HREG(TempTarget);
     TEMP_ACCESSORS_IREG(TempSU);
     TEMP_ACCESSORS_IREG(TempSL);
     TEMP_ACCESSORS_IREG(TempT3);
