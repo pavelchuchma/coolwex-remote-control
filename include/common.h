@@ -36,8 +36,8 @@ extern uint8_t keyColumnPins[];
 extern uint8_t displayBuff[];
 extern ModbusIP modbus;
 
+void initializeModbus();
 void decodeDisplayData();
-void decodeDisplayStatusFlags(bool isPoweredOn);
 void printData(uint8_t* data, uint8_t bitCount);
 
 #define INVALID_TEMP -128
@@ -121,12 +121,27 @@ const char* enumToString(KEYS value);
 #define TEMP_ACCESSORS_IREG(name) TEMP_ACCESSORS_IMPL(name, Ireg, ireg) 
 #define TEMP_ACCESSORS_HREG(name) TEMP_ACCESSORS_IMPL(name, Hreg, hreg) 
 
+#define FLAG_ACCESSORS(name) \
+    void set##name(bool value) {\
+        if (value != flag##name) {\
+            Serial.printf("set" #name ": %d\n", (int)value);\
+        }\
+        flag##name = value;\
+    }\
+    bool is##name() { return flag##name; }
+
+
 class StateData {
     MODE mode = MODE::unknown;
     bool powerOnState = false;
     ModbusIP& modbus;
     uint32_t currentLoopMillis;
     uint32_t lastRefreshTime = 0;
+    bool flagPowerOn;
+    bool flagHot;
+    bool flagEHeat;
+    bool flagPump;
+    bool flagVacation;
 
 public:
     StateData(ModbusIP& modbus) : modbus(modbus) {
@@ -143,27 +158,11 @@ public:
         modbus.Ireg(iregDisplayMode, mode);
     }
 
-    uint8_t getStatusFlags() {
-        return modbus.Ireg(iregStatusFlags);
-    }
-
-    void setStatusFlags(uint8_t statusFlags) {
-        uint8_t oldValue = getStatusFlags();
-        if (statusFlags != oldValue) {
-            Serial.printf("setStatusFlags: ");
-            if (statusFlags & STATUS_FLAG_ON) Serial.print("on, ");
-            if (statusFlags & STATUS_FLAG_HOT) Serial.print("hot, ");
-            if (statusFlags & STATUS_FLAG_EHEAT) Serial.print("eheat, ");
-            if (statusFlags & STATUS_FLAG_PUMP) Serial.print("pump, ");
-            if (statusFlags & STATUS_FLAG_VACATION) Serial.print("vacation, ");
-            Serial.println();
-        }
-        modbus.Ireg(iregStatusFlags, statusFlags);
-    }
-    
-    bool isPowerOn() {
-        return getStatusFlags() & STATUS_FLAG_ON;
-    }
+    FLAG_ACCESSORS(PowerOn);
+    FLAG_ACCESSORS(Hot);
+    FLAG_ACCESSORS(EHeat);
+    FLAG_ACCESSORS(Pump);
+    FLAG_ACCESSORS(Vacation);
 
     TEMP_ACCESSORS_IREG(TempCurrent);
     TEMP_ACCESSORS_HREG(TempTarget);

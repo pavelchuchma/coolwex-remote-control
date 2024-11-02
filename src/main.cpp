@@ -87,32 +87,6 @@ void initializeWiFi() {
     Serial.println("mDNS responder started");
 }
 
-uint16_t onSetRefreshStatusCallback(TRegister* reg, uint16_t value) {
-    Serial.printf("onSetRefreshStatusCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
-    startKeySequence(KEY_SEQUENCE::ksRefreshStatus, 0);
-    return value;
-}
-
-uint16_t onSetPowerOnCallback(TRegister* reg, uint16_t value) {
-    Serial.printf("onSetPowerOnCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
-    startKeySequence(KEY_SEQUENCE::ksPowerOn, value);
-    return value;
-}
-
-uint16_t onSetHregCallback(TRegister* reg, uint16_t value) {
-    Serial.printf("onSetHregCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
-    KEYS key = (KEYS)(value >> 8);
-    uint16_t duration = (value & 0xFF) * 100;
-    startHoldKey(key, duration);
-    return value;
-}
-
-uint16_t onGetStatusAgeCallback(TRegister* reg, uint16_t value) {
-    Serial.printf("onGetStatusAgeCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
-    return stateData.getStatusAgeSeconds();
-}
-
-
 void setup() {
     pinMode(PIN_KEYBOARD_IN_ROW_1, INPUT);
     pinMode(PIN_KEYBOARD_IN_ROW_2, INPUT);
@@ -125,16 +99,7 @@ void setup() {
 
     initializeWiFi();
 
-    modbus.server();
-    modbus.addIreg(MODBUS_REGISTERS::iregFirstRegister, 0, MODBUS_REGISTERS::iregRegisterCount);
-    modbus.addHreg(MODBUS_REGISTERS::hregTempTarget, 0, 1);
-    modbus.addHreg(MODBUS_REGISTERS::hregPressKey, 0, 1);
-    modbus.addCoil(MODBUS_REGISTERS::cregRefreshStatus, false, 1);
-    modbus.addCoil(MODBUS_REGISTERS::cregPowerOn, false, 1);
-    modbus.onSetHreg(MODBUS_REGISTERS::hregPressKey, onSetHregCallback, 1);
-    modbus.onGetIreg(MODBUS_REGISTERS::iregStatusAge, onGetStatusAgeCallback, 1);
-    modbus.onSetCoil(MODBUS_REGISTERS::cregRefreshStatus, onSetRefreshStatusCallback, 1);
-    modbus.onSetCoil(MODBUS_REGISTERS::cregPowerOn, onSetPowerOnCallback, 1);
+    initializeModbus();
 
     attachInterrupt(PIN_KEYBOARD_IN_ROW_1, keyboadPulseInt, FALLING);
     initializeSpiSlave();

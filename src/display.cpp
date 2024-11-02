@@ -118,16 +118,6 @@ MODE decodeDisplayMode() {
     return MODE::unlocked;
 }
 
-void decodeDisplayStatusFlags(bool isPoweredOn) {
-    uint8_t status = 0;
-    if (isPoweredOn) status += STATUS_FLAG_ON;
-    if (displayBuff[15] & (1 << 4)) status += STATUS_FLAG_HOT;
-    if (displayBuff[14] & (1 << 3)) status += STATUS_FLAG_EHEAT;
-    if (displayBuff[14] & (1 << 6)) status += STATUS_FLAG_PUMP;
-    if (displayBuff[14] & (1 << 4)) status += STATUS_FLAG_VACATION;
-    stateData.setStatusFlags(status);
-}
-
 void decodeDisplayData() {
     MODE mode = decodeDisplayMode();
     stateData.setDisplayMode(mode);
@@ -137,6 +127,10 @@ void decodeDisplayData() {
         break;
     case MODE::unlocked:
     case MODE::locked:
+        stateData.setHot(displayBuff[15] & (1 << 4));
+        stateData.setEHeat(displayBuff[14] & (1 << 3));
+        stateData.setPump(displayBuff[14] & (1 << 6));
+        stateData.setVacation(displayBuff[14] & (1 << 4));
         stateData.setTempCurrent(decodeTemp());
         break;
     case MODE::setTemp:

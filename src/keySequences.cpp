@@ -49,7 +49,7 @@ bool checkDisplayModeAndDoNextStep(MODE expMode, KEYS key, uint16_t durationMs) 
 }
 
 bool commonGetStateSteps0to3() {
-    bool isVacation;
+    bool isSetVacationMode;
     switch (keyStatus.currentSequenceStep) {
     case 0:
         keyStatus.currentSequenceStep++;
@@ -68,11 +68,11 @@ bool commonGetStateSteps0to3() {
         return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyVacation, 100);
     case 3:
         keyStatus.currentSequenceStep++;
-        // vacation mode is available only if power is on
-        isVacation = stateData.getDisplayMode() == MODE::setVacation;
-        decodeDisplayStatusFlags(isVacation);
+        // setVacation mode is available only if power is on
+        isSetVacationMode = stateData.getDisplayMode() == MODE::setVacation;
+        stateData.setPowerOn(isSetVacationMode);
 
-        if (isVacation) {
+        if (isSetVacationMode) {
             startHoldKey(KEYS::keyCancel, 100);
             return true;
         }
@@ -90,7 +90,8 @@ bool commonGetStateSteps0to3() {
 
 bool keySequencePowerOn() {
     Serial.printf("keySequencePowerOn(%d)\n", keyStatus.currentSequenceStep);
-    bool isVacation;
+    bool isSetVacationMode;
+    bool targetPowerOnValue = keyStatus.currentSequenceTargetValue;
     switch (keyStatus.currentSequenceStep) {
     case 0:
     case 1:
@@ -101,27 +102,28 @@ bool keySequencePowerOn() {
         if (!checkDisplayMode(MODE::unlocked)) {
             return false;
         }
-        if (keyStatus.currentSequenceTargetValue == stateData.isPowerOn()) {
+        if (stateData.isPowerOn() == targetPowerOnValue) {
             Serial.printf("No change, power is already: %d\n", stateData.isPowerOn());
             return false;
         }
 
         keyStatus.currentSequenceStep++;
-        startHoldKey(KEYS::keyOnOff, 200);
+        startHoldKey(KEYS::keyOnOff, 100);
         return true;
     case 5:
         return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyVacation, 100);
     case 6:
         keyStatus.currentSequenceStep++;
         // vacation mode is available only if power is on
-        isVacation = stateData.getDisplayMode() == MODE::setVacation;
+        isSetVacationMode = stateData.getDisplayMode() == MODE::setVacation;
+        stateData.setPowerOn(isSetVacationMode);
 
-        if (isVacation == (bool)keyStatus.currentSequenceTargetValue) {
-            Serial.printf("INFO: power set %s\n", (isVacation) ? "ON" : "OFF");
+        if (isSetVacationMode == targetPowerOnValue) {
+            Serial.printf("INFO: power set %s\n", (isSetVacationMode) ? "ON" : "OFF");
         } else {
-            Serial.printf("ERR: failed to set power %s\n", (keyStatus.currentSequenceTargetValue) ? "ON" : "OFF");
+            Serial.printf("ERR: failed to set power %s\n", (targetPowerOnValue) ? "ON" : "OFF");
         }
-        if (isVacation) {
+        if (isSetVacationMode) {
             startHoldKey(KEYS::keyCancel, 100);
             return true;
         }
