@@ -4,17 +4,17 @@
 #include <Arduino.h>
 #include <ModbusIP_ESP8266.h>
 
-#define PIN_DISPLAY_CS GPIO_NUM_5
-#define PIN_DISPLAY_CLK GPIO_NUM_18
-#define PIN_DISPLAY_DATA GPIO_NUM_23
+#define PIN_DISPLAY_CS GPIO_NUM_5 // conn 4 via 10K
+#define PIN_DISPLAY_CLK GPIO_NUM_18 // conn 5 via 10K
+#define PIN_DISPLAY_DATA GPIO_NUM_23 // conn 3 via 10K
 
-#define PIN_KEYBOARD_IN_ROW_1 GPIO_NUM_27
-#define PIN_KEYBOARD_IN_ROW_2 GPIO_NUM_26
-#define PIN_KEYBOARD_IN_ROW_3 GPIO_NUM_25
+#define PIN_KEYBOARD_IN_ROW_1 GPIO_NUM_27 // conn 7
+#define PIN_KEYBOARD_IN_ROW_2 GPIO_NUM_26 // conn 8
+#define PIN_KEYBOARD_IN_ROW_3 GPIO_NUM_25 // conn 9
 
-#define PIN_KEYBOARD_OUT_COL_1 GPIO_NUM_15
-#define PIN_KEYBOARD_OUT_COL_2 GPIO_NUM_16
-#define PIN_KEYBOARD_OUT_COL_3 GPIO_NUM_17
+#define PIN_KEYBOARD_OUT_COL_1 GPIO_NUM_15 // conn 11 via 1K5
+#define PIN_KEYBOARD_OUT_COL_2 GPIO_NUM_16 // conn 12 via 1K5
+#define PIN_KEYBOARD_OUT_COL_3 GPIO_NUM_17 // conn 13 via 1K5
 
 extern uint8_t keyColumnPins[];
 

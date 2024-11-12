@@ -88,9 +88,9 @@ void initializeWiFi() {
 }
 
 void setup() {
-    pinMode(PIN_KEYBOARD_IN_ROW_1, INPUT);
-    pinMode(PIN_KEYBOARD_IN_ROW_2, INPUT);
-    pinMode(PIN_KEYBOARD_IN_ROW_3, INPUT);
+    pinMode(PIN_KEYBOARD_IN_ROW_1, INPUT_PULLUP);
+    pinMode(PIN_KEYBOARD_IN_ROW_2, INPUT_PULLUP);
+    pinMode(PIN_KEYBOARD_IN_ROW_3, INPUT_PULLUP);
 
     setKeyboardOutPinsAsInputs();
 
