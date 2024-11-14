@@ -4,13 +4,13 @@
 
 uint16_t onSetRefreshStatusCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetRefreshStatusCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
-    startKeySequence(KEY_SEQUENCE::ksRefreshStatus, 0);
+    keyboard.startKeySequence(KEY_SEQUENCE::ksRefreshStatus, 0);
     return value;
 }
 
 uint16_t onSetPowerOnCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetPowerOnCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
-    startKeySequence(KEY_SEQUENCE::ksPowerOn, value);
+    keyboard.startKeySequence(KEY_SEQUENCE::ksPowerOn, value);
     return value;
 }
 
@@ -18,19 +18,39 @@ uint16_t onSetPressKeyCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetPressKeyCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)value);
     KEYS key = (KEYS)(value >> 8);
     uint16_t duration = (value & 0xFF) * 100;
-    startHoldKey(key, duration);
+    keyboard.pressKey(key, duration);
     return value;
+}
+
+bool waitForSequence(KEY_SEQUENCE ks, uint16_t timeoutMs) {
+    uint32_t startTime = stateData.getNow();
+    while (keyboard.getCurrentSequence() == ks) {
+        // Serial.printf("waiting for sequence\n");
+        delay(50);
+        if (stateData.getNow() > startTime + timeoutMs) {
+            Serial.printf("ERR: Sequence timeout!\n");
+            return false;
+        }
+    }
+    return true;
 }
 
 uint16_t onSetTempTargetCallback(TRegister* reg, uint16_t value) {
     uint8_t targetTemp = value - 128;
-    Serial.printf("onSetTempTargetCallback(a:%d, v:%d)\n", (int)reg->address.address, (int)targetTemp);
-    if (targetTemp >= 38 && targetTemp <= 60) {
-        startKeySequence(KEY_SEQUENCE::ksSetTargetTemp, targetTemp);        
+    Serial.printf("onSetTempTargetCallback(v:%d)\n", (int)targetTemp);
+    if (targetTemp < 38 || targetTemp > 60) {
+        Serial.printf("ERR: target temp %d is out of range <38;60>\n", (int)targetTemp);
     } else {
-        Serial.printf("ERR: target temp %d is our of range <38;60>\n", (int)targetTemp);
+        if (keyboard.startKeySequence(KEY_SEQUENCE::ksSetTargetTemp, targetTemp)
+            && waitForSequence(KEY_SEQUENCE::ksSetTargetTemp, 15000)
+            && stateData.getTempTarget() == targetTemp
+            ) {
+            Serial.printf("Target temp successfully set to %d\n", targetTemp);
+        } else {
+            Serial.printf("ERR: Failed to set target temp to %d\n", targetTemp);
+        }
     }
-    return value;
+    return 128;
 }
 
 uint16_t onGetTempTargetCallback(TRegister* reg, uint16_t value) {

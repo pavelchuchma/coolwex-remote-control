@@ -23,46 +23,13 @@ uint32_t lastTransactionStartedMillis = 0;
 bool displayDataReady = false;
 bool spiTransactionStared = false;
 
-KeyStatus keyStatus;
+Keyboard keyboard;
 
 void initializeSpiSlave();
 bool handleDisplayDataReady();
 
-uint8_t keyColumnPins[] = { PIN_KEYBOARD_OUT_COL_1, PIN_KEYBOARD_OUT_COL_2, PIN_KEYBOARD_OUT_COL_3 };
-
 void IRAM_ATTR keyboadPulseInt() {
-    if (!keyStatus.isHoldingKey() || GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_1)) {
-        // delayed interrupt processing, ignore
-        return;
-    }
-    switch (keyStatus.inRow) {
-    case 0:
-        // row 1
-        GPIO_FAST_SET_0(keyStatus.outPin);
-        while (!GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_1)) NOP();
-        GPIO_FAST_SET_1(keyStatus.outPin);
-        break;
-    case 1:
-        // row 2
-        while (GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_2)) NOP();
-        GPIO_FAST_SET_0(keyStatus.outPin);
-        while (!GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_2)) NOP();
-        GPIO_FAST_SET_1(keyStatus.outPin);
-        break;
-    case 2:
-        // row 3
-        while (!GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_3)) NOP();
-        GPIO_FAST_SET_1(keyStatus.outPin);
-        while (GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_3)) NOP();
-        GPIO_FAST_SET_0(keyStatus.outPin);
-        break;
-    case 3:
-        while (!GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_3) || !GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_1)) NOP();
-        GPIO_FAST_SET_1(keyStatus.outPin);
-        while (GPIO_FAST_GET_LEVEL(PIN_KEYBOARD_IN_ROW_3)) NOP();
-        GPIO_FAST_SET_0(keyStatus.outPin);
-        break;
-    }
+    keyboard.onKeyboardInputRow1Low();
 }
 
 void initializeWiFi() {
@@ -87,12 +54,21 @@ void initializeWiFi() {
     Serial.println("mDNS responder started");
 }
 
+void modbusTask(void* pvParameters) {
+    while (true) {
+//        Serial.println("*** MODBUS ***");
+        modbus.task();
+        delay(100);
+        yield();
+    }
+}
+
 void setup() {
     pinMode(PIN_KEYBOARD_IN_ROW_1, INPUT_PULLUP);
     pinMode(PIN_KEYBOARD_IN_ROW_2, INPUT_PULLUP);
     pinMode(PIN_KEYBOARD_IN_ROW_3, INPUT_PULLUP);
 
-    setKeyboardOutPinsAsInputs();
+    keyboard.setKeyboardOutPinsAsInputs();
 
     Serial.begin(921600);
     Serial.println("\nStarted, connecting WiFi");
@@ -103,6 +79,7 @@ void setup() {
 
     attachInterrupt(PIN_KEYBOARD_IN_ROW_1, keyboadPulseInt, FALLING);
     initializeSpiSlave();
+    xTaskCreate(modbusTask, "modbusTask", 4096, NULL, 1, NULL);
 }
 
 spi_slave_transaction_t spiReadTransaction = {
@@ -148,14 +125,21 @@ void verifyWiFiConnected() {
     }
 }
 
+uint32_t lastPrintMillis = 0;
+
+
 void loop() {
     stateData.onLoopStart();
-    if (processKeySequence()) {
-        // key is down, no extra action
+    if (stateData.millisSince(lastPrintMillis) > 100) {
+        // Serial.println("L");
+        lastPrintMillis = stateData.getNow();
+    }
+
+    if (keyboard.onLoop()) {
+        // key is down, no more actions
         return;
     }
     verifyWiFiConnected();
-    modbus.task();
 
     // process data from display
     if (displayDataReady) {
@@ -163,7 +147,7 @@ void loop() {
         if (!handleDisplayDataReady()) {
             return;
         }
-        keyStatus.displayReadsAfterKeyUp++;
+        keyboard.afterDisplayDataRead();
     }
 
     if (stateData.millisSince(lastTransactionStartedMillis) > 5000 && spiTransactionStared) {
