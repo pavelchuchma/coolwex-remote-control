@@ -16,8 +16,6 @@
 #define PIN_KEYBOARD_OUT_COL_2 GPIO_NUM_16 // conn 12 via 1K5
 #define PIN_KEYBOARD_OUT_COL_3 GPIO_NUM_17 // conn 13 via 1K5
 
-extern uint8_t keyColumnPins[];
-
 // At microsecond speeds, the functions from gpio.h are too heavy
 #define GPIO_FAST_SET_1(gpio_num) GPIO.out_w1ts |= (0x1 << gpio_num)
 #define GPIO_FAST_SET_0(gpio_num) GPIO.out_w1tc |= (0x1 << gpio_num)
@@ -39,6 +37,9 @@ extern ModbusIP modbus;
 void initializeModbus();
 void decodeDisplayData();
 void printData(uint8_t* data, uint8_t bitCount);
+inline const char* boolAsOnOffStr(bool value) {
+    return (value) ? "ON" : "OFF";
+}
 
 #define INVALID_TEMP -128
 

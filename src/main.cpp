@@ -24,6 +24,7 @@ bool displayDataReady = false;
 bool spiTransactionStared = false;
 
 Keyboard keyboard;
+KeyboardSequence keyboardSequence(keyboard);
 
 void initializeSpiSlave();
 bool handleDisplayDataReady();
@@ -125,17 +126,19 @@ void verifyWiFiConnected() {
     }
 }
 
-uint32_t lastPrintMillis = 0;
+// uint32_t lastPrintMillis = 0;
 
 
 void loop() {
     stateData.onLoopStart();
-    if (stateData.millisSince(lastPrintMillis) > 100) {
-        // Serial.println("L");
-        lastPrintMillis = stateData.getNow();
-    }
-
-    if (keyboard.onLoop()) {
+    // if (stateData.millisSince(lastPrintMillis) > 100) {
+    //     // Serial.println("L");
+    //     lastPrintMillis = stateData.getNow();
+    // }
+    delay(30);
+    
+    keyboard.onLoop();
+    if (keyboardSequence.onLoop()) {
         // key is down, no more actions
         return;
     }
@@ -147,7 +150,7 @@ void loop() {
         if (!handleDisplayDataReady()) {
             return;
         }
-        keyboard.afterDisplayDataRead();
+        keyboardSequence.afterDisplayDataRead();
     }
 
     if (stateData.millisSince(lastTransactionStartedMillis) > 5000 && spiTransactionStared) {

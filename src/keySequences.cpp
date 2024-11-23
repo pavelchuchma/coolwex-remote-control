@@ -2,33 +2,6 @@
 #include "common.h"
 #include "keySequences.h"
 
-void Keyboard::setKeyboardOutPinsAsInputs() {
-    pinMode(PIN_KEYBOARD_OUT_COL_1, INPUT);
-    pinMode(PIN_KEYBOARD_OUT_COL_2, INPUT);
-    pinMode(PIN_KEYBOARD_OUT_COL_3, INPUT);
-}
-
-void Keyboard::pressKey(KEYS key, uint16_t durationMs) {
-    uint8_t col = key >> 4;
-    uint8_t row = key & 0x0F;
-    Serial.printf("setKeyHoldStart(%s for %d ms)\n", enumToString(key), (int)durationMs);
-    if (col > 2 || row > 3) {
-        Serial.printf("ERR: Invalid key request: col=%d, row=%d\n", (int)col, (int)row);
-        return;
-    }
-    if (isHoldingKey()) {
-        Serial.printf("ERR: Still holding another key\n");
-        return;
-    }
-    setKeyboardOutPinsAsInputs();
-
-    outPin = keyColumnPins[col];
-    inRow = row;
-    pinMode(outPin, OUTPUT);
-    GPIO_FAST_OUTPUT_ENABLE(outPin);
-
-    holdKeyStart(stateData.getNow(), durationMs);
-}
 
 bool checkDisplayMode(MODE expMode) {
     MODE currentMode = stateData.getDisplayMode();
@@ -39,29 +12,29 @@ bool checkDisplayMode(MODE expMode) {
     return true;
 }
 
-bool Keyboard::checkDisplayModeAndDoNextStep(MODE expMode, KEYS key, uint16_t durationMs) {
+bool KeyboardSequence::checkDisplayModeAndDoNextStep(MODE expMode, KEYS key, uint16_t durationMs) {
     if (!checkDisplayMode(expMode)) {
         return false;
     }
     currentSequenceStep++;
-    pressKey(key, durationMs);
+    keyboard.keyDown(key, durationMs);
     return true;
 }
 
-bool Keyboard::commonGetStateSteps0to3() {
+bool KeyboardSequence::commonGetStateSteps0to3() {
     bool isSetVacationMode;
     switch (currentSequenceStep) {
     case 0:
         currentSequenceStep++;
         if (stateData.getDisplayMode() == MODE::displayOff) {
             // press cancel to turn display on
-            pressKey(KEYS::keyCancel, 100);
+            keyboard.keyDown(KEYS::keyCancel, 100);
             return true;
         }
     case 1:
         currentSequenceStep++;
         if (stateData.getDisplayMode() == MODE::locked) {
-            pressKey(KEYS::keyEnter, 3200);
+            keyboard.keyDown(KEYS::keyEnter, 3200);
             return true;
         }
     case 2:
@@ -73,7 +46,7 @@ bool Keyboard::commonGetStateSteps0to3() {
         stateData.setPowerOn(isSetVacationMode);
 
         if (isSetVacationMode) {
-            pressKey(KEYS::keyCancel, 100);
+            keyboard.keyDown(KEYS::keyCancel, 100);
             return true;
         }
         if (!checkDisplayMode(MODE::unlocked)) {
@@ -87,11 +60,7 @@ bool Keyboard::commonGetStateSteps0to3() {
     }
 }
 
-inline const char* boolAsOnOffStr(bool value) {
-    return (value) ? "ON" : "OFF";
-}
-
-bool Keyboard::keySequencePowerOn(bool targetPowerOnValue) {
+bool KeyboardSequence::keySequencePowerOn(bool targetPowerOnValue) {
     Serial.printf("keySequencePowerOn(s:%d, v:%s)\n", currentSequenceStep, boolAsOnOffStr(targetPowerOnValue));
     bool isSetVacationMode;
     switch (currentSequenceStep) {
@@ -110,7 +79,7 @@ bool Keyboard::keySequencePowerOn(bool targetPowerOnValue) {
         }
 
         currentSequenceStep++;
-        pressKey(KEYS::keyOnOff, 100);
+        keyboard.keyDown(KEYS::keyOnOff, 100);
         return true;
     case 5:
         return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyVacation, 100);
@@ -126,7 +95,7 @@ bool Keyboard::keySequencePowerOn(bool targetPowerOnValue) {
             Serial.printf("ERR: failed to set power %s\n", boolAsOnOffStr(targetPowerOnValue));
         }
         if (isSetVacationMode) {
-            pressKey(KEYS::keyCancel, 100);
+            keyboard.keyDown(KEYS::keyCancel, 100);
             return true;
         }
     case 7:
@@ -136,7 +105,7 @@ bool Keyboard::keySequencePowerOn(bool targetPowerOnValue) {
         return false;
     }
 }
-bool Keyboard::keySequenceSetTargetTemp(int8_t targetTemp) {
+bool KeyboardSequence::keySequenceSetTargetTemp(int8_t targetTemp) {
     Serial.printf("keySequenceSetTargetTemp(s:%d, v:%d)\n", currentSequenceStep, targetTemp);
     switch (currentSequenceStep) {
     case 0:
@@ -153,10 +122,10 @@ bool Keyboard::keySequenceSetTargetTemp(int8_t targetTemp) {
 
         Serial.printf(" %d -> %d\n", stateData.getCurrentSetTempValue(), targetTemp);
         if (stateData.getCurrentSetTempValue() == targetTemp) {
-            pressKey(KEYS::keyEnter, 100);
+            keyboard.keyDown(KEYS::keyEnter, 100);
             currentSequenceStep++;
         } else {
-            pressKey((stateData.getCurrentSetTempValue() < targetTemp) ? KEYS::keyUpArrow : KEYS::keyDownArrow, 100);
+            keyboard.keyDown((stateData.getCurrentSetTempValue() < targetTemp) ? KEYS::keyUpArrow : KEYS::keyDownArrow, 100);
         }
         return true;
     case 6:
@@ -172,7 +141,7 @@ bool Keyboard::keySequenceSetTargetTemp(int8_t targetTemp) {
     }
 }
 
-bool Keyboard::keySequenceRefreshStatus() {
+bool KeyboardSequence::keySequenceRefreshStatus() {
     Serial.printf("keySequenceRefreshStatus(%d)\n", currentSequenceStep);
     switch (currentSequenceStep) {
     case 0:
@@ -227,29 +196,17 @@ bool Keyboard::keySequenceRefreshStatus() {
     }
 }
 
-bool Keyboard::handleHoldKey() {
-    if (!isHoldingKey()) {
-        return false;
-    }
 
-    if (stateData.millisSince(keyDownAtMillis) > keyDownDurationMillis) {
-        // stop holding a key
-        setKeyboardOutPinsAsInputs();
-        holdKeyStop();
-    }
-
-    // clear display counter
-    displayReadsAfterKeyUp = 0;
-    // keep holding a key
-    return true;
-}
-
-bool Keyboard::onLoop() {
-    if (handleHoldKey()) {
+bool KeyboardSequence::onLoop() {
+    if (keyboard.isKeyDown()) {
+        displayReadsAfterKeyUp = 0;
+        // Serial.printf("keyDown: %ld, %d\n", keyboard.getKeyDownDurationMillis(), keyboard.isKeyDown());
         return true;
     }
+
     if (displayReadsAfterKeyUp < 3) {
         // let few loops pause after key up to refresh display
+        // Serial.printf("to early after key up: %d\n", displayReadsAfterKeyUp);
         return false;
     }
 
@@ -270,20 +227,41 @@ bool Keyboard::onLoop() {
         Serial.printf("ERR: Unexpected key sequence\n");
     }
     if (!callResult) {
-        // cancel current key sequence
-        currentSequence = KEY_SEQUENCE::ksNone;
-        currentSequenceStep = 0;
+        cancelCurrentSequence();
     }
     return callResult;
 }
 
-bool Keyboard::startKeySequence(KEY_SEQUENCE sequence, uint16_t currentSequenceTargetValue) {
+bool KeyboardSequence::startKeySequence(KEY_SEQUENCE sequence, uint16_t targetValue) {
+    Serial.printf("startKeySequence(seq: %d, val: %d)\n", sequence, targetValue);
     if (currentSequence != KEY_SEQUENCE::ksNone) {
         Serial.printf("ERR: Another key sequence in progress\n");
         return false;
     }
     currentSequence = sequence;
-    currentSequenceTargetValue = currentSequenceTargetValue;
+    currentSequenceTargetValue = targetValue;
     currentSequenceStep = 0;
     return true;
+}
+
+bool KeyboardSequence::processKeySequence(KEY_SEQUENCE sequence, uint16_t targetValue, uint16_t timeoutMs) {
+    if (!startKeySequence(sequence, targetValue)) {
+        return false;
+    }
+    uint32_t startTime = stateData.getNow();
+    while (getCurrentSequence() == sequence) {
+        // Serial.printf("waiting for sequence\n");
+        delay(50);
+        if (stateData.getNow() > startTime + timeoutMs) {
+            Serial.printf("ERR: Sequence timeout!\n");
+            cancelCurrentSequence();
+            return false;
+        }
+    }
+    return true;
+}
+
+void KeyboardSequence::cancelCurrentSequence() {
+    currentSequence = KEY_SEQUENCE::ksNone;
+    currentSequenceStep = 0;
 }
