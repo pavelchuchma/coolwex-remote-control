@@ -26,8 +26,8 @@ of front cover.
 | 9 Keyboard row 3 (bottom)     | GPIO25 over 1K5 (IN)        |
 | 10 NC                         |                             |
 | 11 Keyboard column 1 (left)   | GPIO15 (OUT)                |
-| 12 Keyboard column 1 (middle) | GPIO16 (OUT)                |
-| 13 Keyboard column 1 (right)  | GPIO17 (OUT)                |
+| 12 Keyboard column 2 (middle) | GPIO16 (OUT)                |
+| 13 Keyboard column 3 (right)  | GPIO17 (OUT)                |
 
 *) Switch allows disconnecting 5V source from heatpump when ESP board is connected via USB
 during programming/debugging.
@@ -46,15 +46,15 @@ All modbus registers, allowed operations and expected values are described in he
 [include/types.h](./include/types.h)
 
 ## Photos
-Heatpump display controller board with connect points.
+Heatpump display controller board with connection points<br/>
 ![img](./doc/img/coolwex-board-orig.jpg)
 
-Heatpump display controller board with connected wires.
+Heatpump display controller board with connected wires<br/>
 ![img](./doc/img/coolwex-board-wired.jpg)
 
-Scheme of ESP32 PCB board with Socket IDC male 16 pin connector
+Scheme of ESP32 PCB board with Socket IDC male 16 pin connector<br/>
 ![img](./doc/img/esp32-pcb.jpg)
 
-Heatpump display & keyboard
+Heatpump display & keyboard<br/>
 ![img](./doc/img/coolwex-display.png)
 
