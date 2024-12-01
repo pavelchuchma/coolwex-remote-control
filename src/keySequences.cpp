@@ -175,9 +175,9 @@ bool KeyboardSequence::keySequenceRefreshStatus() {
     case 8:
         return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyEHeaterPlusDisinfect, 1100);
     case 9:
-        return checkDisplayModeAndDoNextStep(MODE::infoSU, KEYS::keyDownArrow, 100);
+        return checkDisplayModeAndDoNextStep(MODE::infoT5U, KEYS::keyDownArrow, 100);
     case 10:
-        return checkDisplayModeAndDoNextStep(MODE::infoSL, KEYS::keyDownArrow, 100);
+        return checkDisplayModeAndDoNextStep(MODE::infoT5L, KEYS::keyDownArrow, 100);
     case 11:
         return checkDisplayModeAndDoNextStep(MODE::infoT3, KEYS::keyDownArrow, 100);
     case 12:

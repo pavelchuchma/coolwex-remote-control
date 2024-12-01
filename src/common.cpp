@@ -9,8 +9,8 @@ const char* enumToString(MODE value) {
         CASE_ENTRY(MODE::displayOff);
         CASE_ENTRY(MODE::locked);
         CASE_ENTRY(MODE::invalid);
-        CASE_ENTRY(MODE::infoSU);
-        CASE_ENTRY(MODE::infoSL);
+        CASE_ENTRY(MODE::infoT5U);
+        CASE_ENTRY(MODE::infoT5L);
         CASE_ENTRY(MODE::infoT3);
         CASE_ENTRY(MODE::infoT4);
         CASE_ENTRY(MODE::infoTP);

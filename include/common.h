@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <ModbusIP_ESP8266.h>
+#include "types.h"
 
 #define PIN_DISPLAY_CS GPIO_NUM_5 // conn 4 via 10K
 #define PIN_DISPLAY_CLK GPIO_NUM_18 // conn 5 via 10K
@@ -41,76 +42,7 @@ inline const char* boolAsOnOffStr(bool value) {
     return (value) ? "ON" : "OFF";
 }
 
-#define INVALID_TEMP -128
-
-enum MODBUS_REGISTERS {
-    iregDisplayMode = 100,
-    iregStatusFlags = 101,
-    iregStatusAge = 102,
-    iregTempCurrent = 103,
-    iregTempSU = 104,
-    iregTempSL = 105,
-    iregTempT3 = 106,
-    iregTempT4 = 107,
-    iregTempTP = 108,
-    iregTempTh = 109,
-
-    iregFirstRegister = iregDisplayMode,
-    iregRegisterCount = iregTempTh - iregFirstRegister + 1,
-
-    cregRefreshStatus = 200,
-    cregPowerOn = 210,
-
-    hregTempTarget = 300,
-    hregPressKey = 310
-};
-
-enum MODE {
-    unknown = 0,
-    displayOff,
-    locked,
-    invalid,
-    infoSU,
-    infoSL,
-    infoT3,
-    infoT4,
-    infoTP,
-    infoTh,
-    infoCE,
-    infoER1,
-    infoER2,
-    infoER3,
-    infoD7F,
-    setClock,
-    setTemp,
-    unlocked,
-    setVacation,
-    vacation,
-};
-
 const char* enumToString(MODE value);
-
-enum KEYS {
-    // format: colum * 16 + row
-    keyEHeater = 0x00,
-    keyVacation = 0x01,
-    keyDisinfect = 0x02,
-    keyEHeaterPlusDisinfect = 0x03,
-    keyUpArrow = 0x10,
-    keyEnter = 0x11,
-    keyDownArrow = 0x12,
-    keyClockTimer = 0x20,
-    keyCancel = 0x21,
-    keyOnOff = 0x22
-};
-
-const char* enumToString(KEYS value);
-
-#define STATUS_FLAG_ON  (1 << 0)
-#define STATUS_FLAG_HOT (1 << 1)
-#define STATUS_FLAG_EHEAT (1 << 2)
-#define STATUS_FLAG_PUMP (1 << 3)
-#define STATUS_FLAG_VACATION (1 << 4)
 
 #define TEMP_ACCESSORS_IMPL(name, regType, regTypeLowercase) \
     int8_t get##name() { return (int8_t)(modbus.regType(regTypeLowercase##name) - 128);} \
@@ -182,9 +114,8 @@ public:
     FLAG_ACCESSORS(Pump);
     FLAG_ACCESSORS(Vacation);
 
-    TEMP_ACCESSORS_IREG(TempCurrent);
-    TEMP_ACCESSORS_IREG(TempSU);
-    TEMP_ACCESSORS_IREG(TempSL);
+    TEMP_ACCESSORS_IREG(TempT5U);
+    TEMP_ACCESSORS_IREG(TempT5L);
     TEMP_ACCESSORS_IREG(TempT3);
     TEMP_ACCESSORS_IREG(TempT4);
     TEMP_ACCESSORS_IREG(TempTP);

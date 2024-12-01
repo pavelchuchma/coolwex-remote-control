@@ -98,8 +98,8 @@ MODE decodeDisplayMode() {
 
     int32_t td = (*(int32_t*)(displayBuff + 10)) & 0b01110000111111101111111011111110;
     switch (td) {
-    case 0b00000000100011101101011011101010: return infoSU;
-    case 0b00000000100011101101011010001010: return infoSL;
+    case 0b00000000100011101101011011101010: return infoT5U;
+    case 0b00000000100011101101011010001010: return infoT5L;
     case 0b00000000000000001000111011110100: return infoT3;
     case 0b00000000000000001000111001100110: return infoT4;
     case 0b00000000000000001000111000111110: return infoTP;
@@ -131,16 +131,15 @@ void decodeDisplayData() {
         stateData.setEHeat(displayBuff[14] & (1 << 3));
         stateData.setPump(displayBuff[14] & (1 << 6));
         stateData.setVacation(displayBuff[14] & (1 << 4));
-        stateData.setTempCurrent(decodeTemp());
         break;
     case MODE::setTemp:
         stateData.setCurrentSetTempValue(decodeTemp());
         break;
-    case MODE::infoSU:
-        stateData.setTempSU(decodeTemp());
+    case MODE::infoT5U:
+        stateData.setTempT5U(decodeTemp());
         break;
-    case MODE::infoSL:
-        stateData.setTempSL(decodeTemp());
+    case MODE::infoT5L:
+        stateData.setTempT5L(decodeTemp());
         break;
     case MODE::infoT3:
         stateData.setTempT3(decodeTemp());

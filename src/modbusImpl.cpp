@@ -76,18 +76,18 @@ uint16_t onGetStatusAgeCallback(TRegister* reg, uint16_t value) {
 
 uint16_t onGetStatusFlagsCallback(TRegister* reg, uint16_t value) {
     uint16_t res = 0;
-    if (stateData.isPowerOn()) res += STATUS_FLAG_ON;
-    if (stateData.isHot()) res += STATUS_FLAG_HOT;
-    if (stateData.isEHeat()) res += STATUS_FLAG_EHEAT;
-    if (stateData.isPump()) res += STATUS_FLAG_PUMP;
-    if (stateData.isVacation()) res += STATUS_FLAG_VACATION;
+    if (stateData.isPowerOn()) res += STATUS_FLAGS::sfPowerOn;
+    if (stateData.isHot()) res += STATUS_FLAGS::sfHot;
+    if (stateData.isEHeat()) res += STATUS_FLAGS::sfEHeat;
+    if (stateData.isPump()) res += STATUS_FLAGS::sfPump;
+    if (stateData.isVacation()) res += STATUS_FLAGS::sfVacation;
     Serial.printf("onGetStatusFlagsCallback(a:%d, res:%d)\n", (int)reg->address.address, res);
     return res;
 }
 
 void initializeModbus() {
     modbus.server();
-    modbus.addIreg(MODBUS_REGISTERS::iregFirstRegister, 0, MODBUS_REGISTERS::iregRegisterCount);
+    modbus.addIreg(MODBUS_REGISTERS::iregDisplayMode, 0, MODBUS_REGISTERS::iregTempTh - MODBUS_REGISTERS::iregDisplayMode + 1);
     modbus.addHreg(MODBUS_REGISTERS::hregTempTarget, 0, 1);
     modbus.addHreg(MODBUS_REGISTERS::hregPressKey, 0, 1);
     modbus.addCoil(MODBUS_REGISTERS::cregRefreshStatus, false, 1);
