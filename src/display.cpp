@@ -2,7 +2,6 @@
 #include "common.h"
 
 WORD_ALIGNED_ATTR uint8_t displayBuff[32];
-bool powerOnState;
 
 void printData(uint8_t* data, uint8_t bitCount) {
     char buff[500];
@@ -128,9 +127,14 @@ void decodeDisplayData() {
     case MODE::unlocked:
     case MODE::locked:
         stateData.setHot(displayBuff[15] & (1 << 4));
-        stateData.setEHeat(displayBuff[14] & (1 << 3));
         stateData.setPump(displayBuff[14] & (1 << 6));
         stateData.setVacation(displayBuff[14] & (1 << 4));
+        // read eHeat flag only if requested and if colon ':' in time is shown because eHeat icon is blinking
+        // in manual mode (in sync with colon character)
+        if (stateDataEHeatFlagUpdateRequested && displayBuff[11] & 1 << 0) {
+            stateData.setEHeat(displayBuff[14] & (1 << 3));
+            stateDataEHeatFlagUpdateRequested = false;
+        }
         break;
     case MODE::setTemp:
         stateData.setCurrentSetTempValue(decodeTemp());

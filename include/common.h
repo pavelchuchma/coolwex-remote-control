@@ -67,7 +67,6 @@ const char* enumToString(MODE value);
 
 class StateData {
     MODE mode = MODE::unknown;
-    bool powerOnState = false;
     ModbusIP& modbus;
     uint32_t currentLoopMillis;
     uint32_t lastRefreshTime = 0;
@@ -154,5 +153,6 @@ public:
 #undef TEMP_ACCESSORS
 
 extern StateData stateData;
+extern volatile bool stateDataEHeatFlagUpdateRequested;
 
 #endif /* ADA51EA7_5CDE_4F82_9082_4C0CF1EBAC39 */

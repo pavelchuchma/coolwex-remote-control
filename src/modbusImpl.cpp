@@ -17,6 +17,24 @@ uint16_t onSetRefreshStatusCallback(TRegister* reg, uint16_t value) {
     }
 }
 
+uint16_t onTurnEHeatOnCallback(TRegister* reg, uint16_t value) {
+    Serial.printf("onTurnEHeatOnCallback(v:%d)\n", (int)value);
+
+    if (!stateData.isPowerOn()) {
+        Serial.printf("ERR: failed to turn EHeat on because power is OFF.\n");
+        return 0xFFFF;
+    }
+
+    if (keyboardSequence.processKeySequence(KEY_SEQUENCE::ksEHeatOn, 0, 50000)
+        && stateData.isEHeat())
+    {
+        return value;
+    } else {
+        Serial.printf("ERR: failed to turn EHeat on.\n");
+        return 0xFFFF;
+    }
+}
+
 uint16_t onSetPowerOnCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetPowerOnCallback(v:%s)\n", boolAsOnOffStr(value));
 
@@ -53,16 +71,18 @@ uint16_t onSetTempTargetCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetTempTargetCallback(v:%d)\n", (int)targetTemp);
     if (targetTemp < 38 || targetTemp > 60) {
         Serial.printf("ERR: target temp %d is out of range <38;60>\n", (int)targetTemp);
+        return 0xFFFF;
     } else {
         if (keyboardSequence.processKeySequence(KEY_SEQUENCE::ksSetTargetTemp, targetTemp, 13000)
             && stateData.getTempTarget() == targetTemp)
         {
             Serial.printf("Target temp successfully set to %d\n", targetTemp);
+            return value;
         } else {
             Serial.printf("ERR: Failed to set target temp to %d\n", targetTemp);
+            return 0xFFFF;
         }
     }
-    return value;
 }
 
 uint16_t onGetTempTargetCallback(TRegister* reg, uint16_t value) {
@@ -92,6 +112,7 @@ void initializeModbus() {
     modbus.addHreg(MODBUS_REGISTERS::hregPressKey, 0, 1);
     modbus.addCoil(MODBUS_REGISTERS::cregRefreshStatus, false, 1);
     modbus.addCoil(MODBUS_REGISTERS::cregPowerOn, false, 1);
+    modbus.addCoil(MODBUS_REGISTERS::cregEHeatOn, false, 1);
     modbus.onSetHreg(MODBUS_REGISTERS::hregPressKey, onSetPressKeyCallback, 1);
     modbus.onSetHreg(MODBUS_REGISTERS::hregTempTarget, onSetTempTargetCallback, 1);
     modbus.onGetHreg(MODBUS_REGISTERS::hregTempTarget, onGetTempTargetCallback, 1);
@@ -99,4 +120,5 @@ void initializeModbus() {
     modbus.onGetIreg(MODBUS_REGISTERS::iregStatusFlags, onGetStatusFlagsCallback, 1);
     modbus.onSetCoil(MODBUS_REGISTERS::cregRefreshStatus, onSetRefreshStatusCallback, 1);
     modbus.onSetCoil(MODBUS_REGISTERS::cregPowerOn, onSetPowerOnCallback, 1);
+    modbus.onSetCoil(MODBUS_REGISTERS::cregEHeatOn, onTurnEHeatOnCallback, 1);
 }

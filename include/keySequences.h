@@ -8,7 +8,8 @@ enum KEY_SEQUENCE {
     ksNone = 0,
     ksRefreshStatus,
     ksPowerOn,
-    ksSetTargetTemp
+    ksSetTargetTemp,
+    ksEHeatOn
 };
 
 extern Keyboard keyboard;
@@ -20,6 +21,7 @@ class KeyboardSequence {
     uint16_t currentSequenceTargetValue;
     uint8_t currentSequenceStep = 0;
     unsigned long displayReadsAfterKeyUp = 0;
+    bool refreshDisplayEnabled = true;
 
 public:
     KeyboardSequence(Keyboard& keyboard) : keyboard(keyboard) {}
@@ -41,6 +43,7 @@ private:
     bool keySequencePowerOn(bool targetPowerOnValue);
     bool keySequenceSetTargetTemp(int8_t targetTemp);
     bool keySequenceRefreshStatus();
+    bool keySequenceTurnEHeatOn();
 };
 
 #endif /* D9F5614E_AB7E_4715_9792_44B8B371911D */

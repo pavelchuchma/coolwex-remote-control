@@ -64,6 +64,11 @@ enum MODBUS_REGISTERS {
     cregPowerOn = 210,
 
     /**
+     * Manually turns eHeat on.
+     */
+    cregEHeatOn = 211,
+
+    /**
      * Gets or sets target temperature. Acceptable target values are 38 - 60. (166 - 188 after increasing by 128)
      * All values representing temperatures are entered increased by 128 to allow for negative values to be transferred.
      */

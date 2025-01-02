@@ -17,6 +17,7 @@
 
 ModbusIP modbus;
 StateData stateData(modbus);
+volatile bool stateDataEHeatFlagUpdateRequested;
 uint32_t lastWiFiReconnectMillis = 0;
 uint32_t lastTransactionStartedMillis = 0;
 
@@ -138,7 +139,7 @@ void loop() {
     delay(30);
     
     keyboard.onLoop();
-    if (keyboardSequence.onLoop()) {
+    if (keyboardSequence.onLoop() && keyboard.isKeyDown()) {
         // key is down, no more actions
         return;
     }

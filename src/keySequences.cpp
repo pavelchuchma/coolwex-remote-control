@@ -105,6 +105,7 @@ bool KeyboardSequence::keySequencePowerOn(bool targetPowerOnValue) {
         return false;
     }
 }
+
 bool KeyboardSequence::keySequenceSetTargetTemp(int8_t targetTemp) {
     Serial.printf("keySequenceSetTargetTemp(s:%d, v:%d)\n", currentSequenceStep, targetTemp);
     switch (currentSequenceStep) {
@@ -150,8 +151,24 @@ bool KeyboardSequence::keySequenceRefreshStatus() {
     case 3:
         return commonGetStateSteps0to3();
     case 4:
-        return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyDownArrow, 100);
+        if (!checkDisplayMode(MODE::unlocked)) {
+            return false;
+        }
+        // initiate eHeat flag read (it may be read only if colon ':' in time is shown because eHeat icon is blinking
+        // in manual mode (in sync with colon)
+        stateDataEHeatFlagUpdateRequested = true;
+        currentSequenceStep++;
+        return true;
     case 5:
+        if (!checkDisplayMode(MODE::unlocked)) {
+            return false;
+        }
+        // wait for eHeat flag update
+        if (!stateDataEHeatFlagUpdateRequested) {
+            return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyDownArrow, 100);
+        }
+        return true;
+    case 6:
         if (checkDisplayModeAndDoNextStep(MODE::setTemp, KEYS::keyCancel, 100)) {
             if (stateData.getCurrentSetTempValue() == 38) {
                 // 38 is the lowest possible value. Not sure if the real target value is 38 or 39 decreased by down arrow
@@ -164,29 +181,29 @@ bool KeyboardSequence::keySequenceRefreshStatus() {
             return true;
         }
         return false;
-    case 6:
-        return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyUpArrow, 100);
     case 7:
+        return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyUpArrow, 100);
+    case 8:
         if (checkDisplayModeAndDoNextStep(MODE::setTemp, KEYS::keyCancel, 100)) {
             stateData.setTempTarget(stateData.getCurrentSetTempValue() - 1);
             return true;
         }
         return false;
-    case 8:
-        return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyEHeaterPlusDisinfect, 1100);
     case 9:
-        return checkDisplayModeAndDoNextStep(MODE::infoT5U, KEYS::keyDownArrow, 100);
+        return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyEHeaterPlusDisinfect, 1100);
     case 10:
-        return checkDisplayModeAndDoNextStep(MODE::infoT5L, KEYS::keyDownArrow, 100);
+        return checkDisplayModeAndDoNextStep(MODE::infoT5U, KEYS::keyDownArrow, 100);
     case 11:
-        return checkDisplayModeAndDoNextStep(MODE::infoT3, KEYS::keyDownArrow, 100);
+        return checkDisplayModeAndDoNextStep(MODE::infoT5L, KEYS::keyDownArrow, 100);
     case 12:
-        return checkDisplayModeAndDoNextStep(MODE::infoT4, KEYS::keyDownArrow, 100);
+        return checkDisplayModeAndDoNextStep(MODE::infoT3, KEYS::keyDownArrow, 100);
     case 13:
-        return checkDisplayModeAndDoNextStep(MODE::infoTP, KEYS::keyDownArrow, 100);
+        return checkDisplayModeAndDoNextStep(MODE::infoT4, KEYS::keyDownArrow, 100);
     case 14:
-        return checkDisplayModeAndDoNextStep(MODE::infoTh, KEYS::keyEHeaterPlusDisinfect, 1100);
+        return checkDisplayModeAndDoNextStep(MODE::infoTP, KEYS::keyDownArrow, 100);
     case 15:
+        return checkDisplayModeAndDoNextStep(MODE::infoTh, KEYS::keyEHeaterPlusDisinfect, 1100);
+    case 16:
         Serial.println("INFO: status read completed");
         stateData.onStatusUpdated();
         return false;
@@ -196,6 +213,46 @@ bool KeyboardSequence::keySequenceRefreshStatus() {
     }
 }
 
+bool KeyboardSequence::keySequenceTurnEHeatOn() {
+    Serial.printf("keySequenceTurnOnEHeat(%d)\n", currentSequenceStep);
+    switch (currentSequenceStep) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        return commonGetStateSteps0to3();
+    case 4:
+        return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyEHeater, 100);
+    case 5:
+        return checkDisplayModeAndDoNextStep(MODE::unlocked, KEYS::keyEnter, 100);
+    case 6:
+        if (!checkDisplayMode(MODE::unlocked)) {
+            return false;
+        }
+        // initiate eHeat flag read (it may be read only if colon ':' in time is shown because eHeat icon is blinking
+        // in manual mode (in sync with colon)
+        stateDataEHeatFlagUpdateRequested = true;
+        currentSequenceStep++;
+        return true;
+    case 7:
+        if (!checkDisplayMode(MODE::unlocked)) {
+            return false;
+        }
+        // wait for eHeat flag update
+        if (!stateDataEHeatFlagUpdateRequested) {
+            if (stateData.isEHeat()) {
+                Serial.println("INFO: TurnOnEHeat completed");
+            } else {
+                Serial.println("ERR: keySequenceTurnOnEHeat failed");
+            }
+            return false;
+        }
+        return true;
+    default:
+        Serial.println("ERR: unexpected status sequence step");
+        return false;
+    }
+}
 
 bool KeyboardSequence::onLoop() {
     if (keyboard.isKeyDown()) {
@@ -222,6 +279,9 @@ bool KeyboardSequence::onLoop() {
         break;
     case KEY_SEQUENCE::ksSetTargetTemp:
         callResult = keySequenceSetTargetTemp(currentSequenceTargetValue);
+        break;
+    case KEY_SEQUENCE::ksEHeatOn:
+        callResult = keySequenceTurnEHeatOn();
         break;
     default:
         Serial.printf("ERR: Unexpected key sequence\n");
