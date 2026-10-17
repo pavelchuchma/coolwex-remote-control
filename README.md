@@ -42,7 +42,7 @@ cp include/credentials.h.example include/credentials.h
 
 and fill in `WIFI_SSID` / `WIFI_PASSWORD`.
 
-## Modus interface
+## Modbus interface
 Supported operations are: 
 * refresh and get status:
   * current display mode
@@ -50,7 +50,15 @@ Supported operations are:
   * flags
 * get & set target temperature
 * get & set power on/off
+* turn eHeat on
 * press key
+* read diagnostics of the last failed key sequence (sequence, step, display mode)
+
+Every write starts a sequence of emulated key presses on the heatpump panel and the
+Modbus response is sent only after the sequence has finished and its result was verified
+on the display (up to 15 s). A sequence that could not reach the requested state is
+reported as Modbus exception 4 (Slave Device Failure); repeating the write is safe, since
+each sequence only ensures the requested state.
 
 All modbus registers, allowed operations and expected values are described in header file
 [include/types.h](./include/types.h)
