@@ -291,6 +291,20 @@ Not tested: a real power toggle (touches the heating) and an actual key glitch
 
 ### Java client (home-controller): logging the diagnostics
 
+Where things are:
+
+- Gateway firmware with the register map: `include/types.h` in this repo
+  (commit `397a2e5`), the source of truth for register numbers and enum order.
+- Java client: `home-controller/extensions/src/main/java/org/chuma/homecontroller/extensions/external/boiler/`,
+  `BoilerController.java` holds the nested `ModbusRegisters` constants, the
+  `ModbusClient` constructor call with the 20 s timeout and `getState()` with
+  the debug log line; `State.java` holds the `MODE` enum (ordinal mapped).
+- The controller's own retry issue: `home-controller/doc/todo/001-boiler-turnon-no-retry.md`.
+  Its item 3 (wait for `unlocked` before writing) is no longer needed, a
+  successful refresh now guarantees `unlocked`.
+- A rejected write still comes back as Modbus exception 4 (Slave Device
+  Failure), j2mod raises `ModbusSlaveException`.
+
 Registers to read, all input registers, no change of the existing ones:
 
 | Register | Value | Meaning |
