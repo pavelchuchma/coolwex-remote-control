@@ -46,3 +46,15 @@ const char* enumToString(KEYS value) {
         return "???";
     }
 }
+
+const char* enumToString(KEY_SEQUENCE value) {
+    switch (value) {
+        CASE_ENTRY(KEY_SEQUENCE::ksNone);
+        CASE_ENTRY(KEY_SEQUENCE::ksRefreshStatus);
+        CASE_ENTRY(KEY_SEQUENCE::ksPowerOn);
+        CASE_ENTRY(KEY_SEQUENCE::ksSetTargetTemp);
+        CASE_ENTRY(KEY_SEQUENCE::ksEHeatOn);
+    default:
+        return "???";
+    }
+}

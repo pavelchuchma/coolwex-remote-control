@@ -12,7 +12,8 @@ enum MODBUS_REGISTERS {
      */
     iregDisplayMode = 100,
     /**
-     * @brief Amount of seconds since last successful update of status. Status means all Input and Coil registers except iregDisplayMode.
+     * @brief Amount of seconds since last successful update of status. Status means all Input and Coil registers
+     * except iregDisplayMode and the iregLastFail* diagnostics.
      *
      * Value 65535 means unknow or older than 65535 seconds.
      */
@@ -52,14 +53,22 @@ enum MODBUS_REGISTERS {
      */
     iregTempTh = 108,
 
+    /**
+     * Diagnostics of the last failed key sequence: the sequence (KEY_SEQUENCE value, 0 = no failure since boot),
+     * the step it failed at and the display mode (MODE value) at that moment.
+     */
+    iregLastFailSequence = 109,
+    iregLastFailStep = 110,
+    iregLastFailMode = 111,
+
 
     /**
-     * Any write to this register enforces status refresh of all other values to be get. Operation can take up to 9 seconds.
+     * Any write to this register enforces status refresh of all other values to be get. Operation can take up to 15 seconds.
      */
     cregRefreshStatus = 200,
 
     /**
-     * Gets and sets heatpump power ON or OFF. Operation can take up to 7 seconds.
+     * Gets and sets heatpump power ON or OFF. Operation can take up to 10 seconds.
      */
     cregPowerOn = 210,
 
@@ -103,6 +112,17 @@ enum MODE {
     vacation,
 };
 
+/**
+ * Key sequences driven by the coil / holding register writes. Reported in iregLastFailSequence.
+ */
+enum KEY_SEQUENCE {
+    ksNone = 0,
+    ksRefreshStatus,
+    ksPowerOn,
+    ksSetTargetTemp,
+    ksEHeatOn
+};
+
 enum KEYS {
     // format: colum * 16 + row
     keyEHeater = 0x00,
@@ -118,6 +138,7 @@ enum KEYS {
 };
 
 const char* enumToString(KEYS value);
+const char* enumToString(KEY_SEQUENCE value);
 
 enum STATUS_FLAGS {
     sfPowerOn = 1 << 0,

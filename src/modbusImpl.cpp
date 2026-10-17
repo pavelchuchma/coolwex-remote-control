@@ -7,8 +7,9 @@ extern KeyboardSequence keyboardSequence;
 uint16_t onSetRefreshStatusCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetRefreshStatusCallback(v:%d)\n", (int)value);
 
-    if (keyboardSequence.processKeySequence(KEY_SEQUENCE::ksRefreshStatus, 0, 10000)
-        && stateData.getStatusAgeSeconds() == 0)
+    if (keyboardSequence.processKeySequence(KEY_SEQUENCE::ksRefreshStatus, 0, 15000)
+        && stateData.getStatusAgeSeconds() == 0
+        && stateData.getDisplayMode() == MODE::unlocked)
     {
         return value;
     } else {
@@ -38,7 +39,7 @@ uint16_t onTurnEHeatOnCallback(TRegister* reg, uint16_t value) {
 uint16_t onSetPowerOnCallback(TRegister* reg, uint16_t value) {
     Serial.printf("onSetPowerOnCallback(v:%s)\n", boolAsOnOffStr(value));
 
-    if (keyboardSequence.processKeySequence(KEY_SEQUENCE::ksPowerOn, value, 7000)
+    if (keyboardSequence.processKeySequence(KEY_SEQUENCE::ksPowerOn, value, 10000)
         && ((bool)value) == stateData.isPowerOn())
     {
         return value;
@@ -73,7 +74,7 @@ uint16_t onSetTempTargetCallback(TRegister* reg, uint16_t value) {
         Serial.printf("ERR: target temp %d is out of range <38;60>\n", (int)targetTemp);
         return 0xFFFF;
     } else {
-        if (keyboardSequence.processKeySequence(KEY_SEQUENCE::ksSetTargetTemp, targetTemp, 13000)
+        if (keyboardSequence.processKeySequence(KEY_SEQUENCE::ksSetTargetTemp, targetTemp, 15000)
             && stateData.getTempTarget() == targetTemp)
         {
             Serial.printf("Target temp successfully set to %d\n", targetTemp);
@@ -107,7 +108,7 @@ uint16_t onGetStatusFlagsCallback(TRegister* reg, uint16_t value) {
 
 void initializeModbus() {
     modbus.server();
-    modbus.addIreg(MODBUS_REGISTERS::iregDisplayMode, 0, MODBUS_REGISTERS::iregTempTh - MODBUS_REGISTERS::iregDisplayMode + 1);
+    modbus.addIreg(MODBUS_REGISTERS::iregDisplayMode, 0, MODBUS_REGISTERS::iregLastFailMode - MODBUS_REGISTERS::iregDisplayMode + 1);
     modbus.addHreg(MODBUS_REGISTERS::hregTempTarget, 0, 1);
     modbus.addHreg(MODBUS_REGISTERS::hregPressKey, 0, 1);
     modbus.addCoil(MODBUS_REGISTERS::cregRefreshStatus, false, 1);

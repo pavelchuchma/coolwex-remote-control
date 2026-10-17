@@ -132,6 +132,13 @@ public:
         lastRefreshTime = millis();
     }
 
+    void setLastFailure(KEY_SEQUENCE sequence, uint8_t step, MODE mode) {
+        Serial.printf("ERR: %s failed at step %d, display mode: %s\n", enumToString(sequence), (int)step, enumToString(mode));
+        modbus.Ireg(iregLastFailSequence, sequence);
+        modbus.Ireg(iregLastFailStep, step);
+        modbus.Ireg(iregLastFailMode, mode);
+    }
+
     uint32_t millisSince(uint32_t sinceMillis) {
         if (currentLoopMillis >= sinceMillis) {
             return currentLoopMillis - sinceMillis;
