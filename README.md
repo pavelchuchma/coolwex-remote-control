@@ -32,6 +32,16 @@ of front cover.
 *) Switch allows disconnecting 5V source from heatpump when ESP board is connected via USB
 during programming/debugging.
 
+## Build
+
+WiFi credentials live in a git-ignored header. Before the first build:
+
+```
+cp include/credentials.h.example include/credentials.h
+```
+
+and fill in `WIFI_SSID` / `WIFI_PASSWORD`.
+
 ## Modus interface
 Supported operations are: 
 * refresh and get status:

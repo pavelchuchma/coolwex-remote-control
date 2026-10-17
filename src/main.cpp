@@ -11,8 +11,7 @@
 #include "common.h"
 #include "keySequences.h"
 
-#define WIFI_SSID "XXXX"
-#define WIFI_PASSWORD "YYYY"
+#include "credentials.h"
 
 
 ModbusIP modbus;
